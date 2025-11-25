@@ -1,0 +1,87 @@
+StartDate: 2025-12-02
+EndDate: 2025-12-03
+
+Slug: ai-agents-v2
+Title: Build an AI Agent from Scratch
+Subtitle: Two days building a production-ready AI agent from first principles—tool calling, agent loops, evals, guardrails, and deployment.
+
+Teachers:
+- moss
+
+Excerpt: Build a customer support agent from scratch in TypeScript. No frameworks, no magic—just you, an LLM API, and the patterns that make agents actually work.
+
+Benefits:
+- Understand how AI agents actually work by building one from scratch (no frameworks)
+- Implement tool calling with Zod schemas and build your own agent loop
+- Write evals that catch agent failures before your users do
+- Add guardrails and human-in-the-loop controls for high-stakes actions
+- Handle conversation memory and context window management
+- Deploy a production-ready agent with a chat UI
+
+Summary: >
+  Build a customer support agent for a SaaS product entirely from scratch.
+  Day 1 covers the fundamentals—LLM basics, tool definitions, and the agent loop.
+  Day 2 focuses on production concerns—evals, guardrails, HITL approvals, memory, and deployment.
+  You'll leave with a working agent and deep understanding of how it all fits together.
+
+Audience:
+  Overview:
+  - Full-stack or backend devs who want to understand agents, not just use a framework
+  - Engineers building internal tools, support bots, or ops automation
+  - Anyone who's used LangChain/CrewAI and wants to know what's happening underneath
+  Prerequisites:
+  - Comfortable with TypeScript and Node.js
+  - Can run a local dev server and manage environment variables
+  - An OpenAI API key (or compatible provider)
+
+# The Agent We're Building:
+# A customer support agent for a fictional SaaS product.
+# Tools: lookupUser, getSubscription, listTickets, createTicket,
+#        updateSubscription (HITL), issueRefund (HITL), searchKnowledgeBase
+# This domain gives us: CRUD ops, clear HITL moments, eval-friendly scenarios,
+# and patterns that transfer to any agent you build next.
+
+Schedule:
+# Day 1 — Foundations: From LLM Call to Agent Loop
+- 0930: "Intro + Demo + Setup"
+  # Course overview, demo the finished agent, clone repo, env setup, hello world LLM call
+  # Lesson 1: See where we're going, write your first LLM interaction
+- 1030: Break
+- 1045: "Tool Calling"
+  # Zod schemas, function definitions, structured outputs, calling tools manually
+  # Lesson 2: Define tools the LLM can use, parse its responses
+- 1200: Lunch
+- 1300: "The Agent Loop"
+  # Build the core loop: prompt → LLM → tool call → execute → repeat
+  # Lesson 3: Wire it all together into an autonomous agent
+- 1415: Break
+- 1430: "Conversations + Streaming"
+  # Message history, conversation state, streaming responses
+  # Lesson 4: Make the agent conversational and responsive
+- 1545: Break
+- 1600: "Evals"
+  # Why evals matter, writing your first eval, running against test cases
+  # Lesson 5: Know when your agent is broken before users tell you
+- 1630: End of Day 1
+
+# Day 2 — Production: Making the Agent Reliable
+- 0930: "Day 1 Recap + Prompt Engineering"
+  # Review, then: system prompts, few-shot examples, persona, instruction tuning
+  # Lesson 6: Shape agent behavior through better prompts
+- 1030: Break
+- 1045: "Guardrails + Validation"
+  # Input validation, output validation, preventing prompt injection, safety patterns
+  # Lesson 7: Protect against bad inputs and dangerous outputs
+- 1200: Lunch
+- 1300: "Human-in-the-Loop"
+  # Approval flows, confirmation patterns, graceful handoff to humans
+  # Lesson 8: Add human checkpoints for high-stakes actions
+- 1415: Break
+- 1430: "Memory + Context"
+  # Conversation memory, context window management, summarization strategies
+  # Lesson 9: Help the agent remember without blowing the context window
+- 1530: Break
+- 1545: "Generative UI + Deploy"
+  # Rendering rich responses in chat, deployment options, monitoring basics
+  # Lesson 10: Ship it and make it look good
+- 1630: End of Day 2
