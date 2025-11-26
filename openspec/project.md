@@ -20,27 +20,27 @@ A customer support agent for a SaaS product. Handles user lookups, subscription 
 - **Language:** TypeScript (strict mode)
 - **Runtime:** Cloudflare Workers
 - **Infrastructure:** Cloudflare Agents SDK + Durable Objects
-- **AI Provider:** OpenAI API (raw SDK, no Vercel AI SDK)
+- **AI Provider:** Vercel AI SDK (`ai` + `@ai-sdk/openai`) for streaming and model switching
 - **Schema Validation:** Zod
-- **Frontend:** Pre-built chat UI using `agents/react` hooks
-- **Communication:** WebSockets (via Cloudflare Agent class)
-- **Package Manager:** pnpm
+- **Frontend:** Pre-built chat UI in `src/client/` using `assistant-ui` (not covered in course)
+- **Communication:** HTTP/SSE (via Agent `onRequest` handler)
+- **Package Manager:** npm
 - **Local Dev:** `wrangler dev` (same code runs locally and in prod)
 
 ## Infrastructure
 
 ### Cloudflare Agents SDK
-Use the base `Agent` class from `agents` package—NOT `AIChatAgent`. The `AIChatAgent` class is coupled to Vercel AI SDK, which defeats the educational goal.
+Use the base `Agent` class from `agents` package—NOT `AIChatAgent`. The `AIChatAgent` class abstracts too much, which defeats the educational goal.
 
 ```typescript
 import { Agent } from "agents";
-import OpenAI from "openai";
+import { streamText } from "ai";
+import { openai } from "@ai-sdk/openai";
 
 export class SupportAgent extends Agent<Env, AgentState> {
   // Students build:
-  // - onConnect: handle WebSocket connections
-  // - onMessage: parse client messages, run agent loop
-  // - Agent loop: call OpenAI, handle tools, stream responses
+  // - onRequest: handle HTTP requests, run agent loop
+  // - Agent loop: call streamText, handle tools, stream responses
   // - State management: this.state, this.setState()
 }
 ```
@@ -55,10 +55,10 @@ export class SupportAgent extends Agent<Env, AgentState> {
 ### What Students Build vs. What Cloudflare Provides
 | Students Build | Cloudflare Provides |
 |----------------|---------------------|
-| Tool definitions (Zod) | WebSocket connections |
+| Tool definitions (Zod) | HTTP/WebSocket connections |
 | Agent loop (while loop) | State persistence |
-| OpenAI API calls | Global routing |
-| Streaming logic | Identity/addressing |
+| AI SDK streamText calls | Global routing |
+| Streaming via toUIMessageStreamResponse | Identity/addressing |
 | HITL approval flow | SQL storage |
 
 ### Local Development
@@ -78,7 +78,7 @@ Run `wrangler deploy` to push to Cloudflare's edge network. Students need a Clou
 
 ### Architecture Patterns
 - Base `Agent` class from Cloudflare SDK (not `AIChatAgent`)
-- Raw OpenAI SDK—no Vercel AI SDK, no LangChain
+- Vercel AI SDK for LLM calls (`streamText`, `@ai-sdk/openai`)
 - Tool definitions separate from execution logic
 - Agent loop as a simple while loop, not abstracted
 - Conversation state via `this.state` (Durable Objects)
@@ -87,13 +87,14 @@ Run `wrangler deploy` to push to Cloudflare's edge network. Students need a Clou
 ### File Structure
 ```
 src/
-  index.ts          # Worker entry point, routes to agent
-  agent.ts          # Agent class extending Cloudflare Agent
-  tools/            # Tool definitions and implementations
-  db/               # Mock database seed data
-  prompts/          # System prompts and templates
+  server/
+    index.ts        # Worker entry point, routes to agent
+    agent.ts        # Agent class extending Cloudflare Agent
+    tools/          # Tool definitions and implementations
+    db/             # Mock database seed data
+    prompts/        # System prompts and templates
+  client/           # Pre-built React chat UI (not covered in course)
   evals/            # Evaluation test cases
-public/             # Pre-built chat UI (students don't modify)
 wrangler.toml       # Cloudflare configuration
 ```
 
@@ -121,15 +122,16 @@ wrangler.toml       # Cloudflare configuration
 
 ## Important Constraints
 - Code must be educational and readable over optimized
-- No agent frameworks (LangChain, CrewAI, Vercel AI SDK)—build from scratch
+- No agent frameworks (LangChain, CrewAI)—build core logic from scratch
 - Use base `Agent` class, not `AIChatAgent`
-- Raw OpenAI SDK calls only
+- Vercel AI SDK for LLM calls (streamText) but implement tool execution manually
 - Examples should be self-contained and runnable
 - Each lesson builds on the previous—no skipping ahead
 - HITL required for any action involving money or account changes
 
 ## External Dependencies
 - `agents` - Cloudflare Agents SDK (base `Agent` class)
-- `openai` - Raw OpenAI SDK for chat completions
+- `ai` - Vercel AI SDK core (streamText, CoreMessage types)
+- `@ai-sdk/openai` - OpenAI provider for Vercel AI SDK
 - `zod` - Schema validation and tool definitions
-- Pre-built frontend chat UI (React, uses `useAgent` from `agents/react`)
+- `@assistant-ui/react` - Pre-built chat UI components (not covered in course)

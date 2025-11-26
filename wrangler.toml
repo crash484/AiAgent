@@ -1,0 +1,12 @@
+name = "support-agent"
+main = "./src/server/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[durable_objects.bindings]]
+name = "SupportAgent"
+class_name = "SupportAgent"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SupportAgent"]
