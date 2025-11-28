@@ -6,62 +6,31 @@ export interface Message {
   status: "pending" | "streaming" | "complete" | "error";
 }
 
-// Server-side message format (from agent state sync)
+// Server-side message format (from agent state)
 export interface ServerStateMessage {
   role: "user" | "assistant" | "tool";
   content: string | unknown[];
 }
 
-// WebSocket message types from server
-export interface SyncMessage {
-  type: "sync";
-  messages: ServerStateMessage[];
-}
-
-export interface TextStartMessage {
-  type: "text-start";
-  id: string;
-}
-
-export interface TextDeltaMessage {
-  type: "text-delta";
-  id: string;
-  delta: string;
-}
-
-export interface TextEndMessage {
-  type: "text-end";
-  id: string;
-}
-
-export interface ToolInputMessage {
-  type: "tool-input-available";
+// Tool call state from agent
+export interface ToolCallState {
   toolCallId: string;
   toolName: string;
   input: unknown;
+  output?: string;
 }
 
-export interface ToolOutputMessage {
-  type: "tool-output-available";
-  toolCallId: string;
-  output: string;
+// Run state from agent
+export interface RunState {
+  id: string;
+  status: "streaming" | "done" | "error";
+  textStream: { messageId: string; content: string } | null;
+  toolCalls: ToolCallState[];
+  error?: string;
 }
 
-export interface DoneMessage {
-  type: "done";
+// Agent state shape (received via onStateUpdate)
+export interface AgentState {
+  messages: ServerStateMessage[];
+  currentRun: RunState | null;
 }
-
-export interface ErrorMessage {
-  type: "error";
-  error: string;
-}
-
-export type ServerMessage =
-  | SyncMessage
-  | TextStartMessage
-  | TextDeltaMessage
-  | TextEndMessage
-  | ToolInputMessage
-  | ToolOutputMessage
-  | DoneMessage
-  | ErrorMessage;

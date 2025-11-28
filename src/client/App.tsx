@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useAgent } from "agents/react";
 import { ChatContainer } from "./components";
-import type { Message, ServerMessage, ServerStateMessage } from "./types";
+import type { Message, ServerStateMessage, AgentState } from "./types";
 
 // Generate unique IDs for messages
 function generateId(): string {
@@ -17,8 +17,9 @@ function extractContent(content: string | unknown[]): string {
   // AI SDK ModelMessage format: content is array of content parts
   if (Array.isArray(content)) {
     return content
-      .filter((part): part is { type: string; text?: string } =>
-        typeof part === "object" && part !== null && "type" in part
+      .filter(
+        (part): part is { type: string; text?: string } =>
+          typeof part === "object" && part !== null && "type" in part,
       )
       .filter((part) => part.type === "text" && typeof part.text === "string")
       .map((part) => part.text)
@@ -29,7 +30,9 @@ function extractContent(content: string | unknown[]): string {
 }
 
 // Convert server state messages to client format
-function convertServerMessages(serverMessages: ServerStateMessage[]): Message[] {
+function convertServerMessages(
+  serverMessages: ServerStateMessage[],
+): Message[] {
   return serverMessages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m, index) => ({
@@ -44,91 +47,38 @@ export function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null,
+  );
 
-  const handleMessage = useCallback((event: MessageEvent) => {
-    try {
-      const data: ServerMessage = JSON.parse(event.data);
+  const handleStateUpdate = useCallback((state: AgentState) => {
+    // Update messages from state
+    setMessages(convertServerMessages(state.messages));
 
-      switch (data.type) {
-        case "sync":
-          // Initial state sync - convert and set messages
-          setMessages(convertServerMessages(data.messages));
-          break;
+    // Update streaming state from currentRun
+    if (state.currentRun && state.currentRun.status === "streaming") {
+      setIsStreaming(true);
 
-        case "text-start":
-          // New assistant message starting
-          setIsStreaming(true);
-          setCurrentMessageId(data.id);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: data.id,
-              role: "assistant",
-              content: "",
-              status: "streaming",
-            },
-          ]);
-          break;
-
-        case "text-delta":
-          // Append text to current message
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === data.id
-                ? { ...msg, content: msg.content + data.delta }
-                : msg
-            )
-          );
-          break;
-
-        case "text-end":
-          // Mark message as complete
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === data.id ? { ...msg, status: "complete" } : msg
-            )
-          );
-          break;
-
-        case "tool-input-available":
-          // Tool is being called (optional UI feedback)
-          break;
-
-        case "tool-output-available":
-          // Tool completed (optional UI feedback)
-          break;
-
-        case "done":
-          // Conversation turn complete
-          setIsStreaming(false);
-          setCurrentMessageId(null);
-          break;
-
-        case "error":
-          // Handle error
-          setIsStreaming(false);
-          setCurrentMessageId(null);
-          if (currentMessageId) {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === currentMessageId
-                  ? { ...msg, status: "error", content: msg.content || data.error }
-                  : msg
-              )
-            );
-          }
-          break;
+      if (state.currentRun.textStream) {
+        setStreamingMessageId(state.currentRun.textStream.messageId);
+        setStreamingContent(state.currentRun.textStream.content);
+      } else {
+        setStreamingContent(null);
+        setStreamingMessageId(null);
       }
-    } catch (error) {
-      console.error("Error parsing WebSocket message:", error);
+    } else {
+      // Run is done or doesn't exist - clear streaming state
+      setIsStreaming(false);
+      setStreamingContent(null);
+      setStreamingMessageId(null);
     }
-  }, [currentMessageId]);
+  }, []);
 
   const agent = useAgent({
     agent: "SupportAgent",
     name: "default",
-    onMessage: handleMessage,
+    onStateUpdate: handleStateUpdate,
     onOpen: () => {
       setIsConnected(true);
     },
@@ -142,20 +92,40 @@ export function App() {
     (content: string) => {
       if (!agent || isStreaming) return;
 
-      // Add optimistic user message
-      const userMessage: Message = {
-        id: generateId(),
-        role: "user",
-        content,
-        status: "complete",
-      };
-      setMessages((prev) => [...prev, userMessage]);
-
-      // Send to agent
+      // Send to agent (state update will add the message)
       agent.send(JSON.stringify({ type: "chat", content }));
     },
-    [agent, isStreaming]
+    [agent, isStreaming],
   );
+
+  // Merge streaming content with messages for display
+  const displayMessages = useMemo(() => {
+    if (!streamingContent || !streamingMessageId) {
+      return messages;
+    }
+
+    // Check if streaming message already exists in messages
+    const existingIdx = messages.findIndex((m) => m.id === streamingMessageId);
+    if (existingIdx >= 0) {
+      // Update existing message
+      return messages.map((m, i) =>
+        i === existingIdx
+          ? { ...m, content: streamingContent, status: "streaming" as const }
+          : m,
+      );
+    }
+
+    // Add new streaming message
+    return [
+      ...messages,
+      {
+        id: streamingMessageId,
+        role: "assistant" as const,
+        content: streamingContent,
+        status: "streaming" as const,
+      },
+    ];
+  }, [messages, streamingContent, streamingMessageId]);
 
   // Show loading state while connecting
   if (!isConnected) {
@@ -171,7 +141,7 @@ export function App() {
 
   return (
     <ChatContainer
-      messages={messages}
+      messages={displayMessages}
       onSend={sendMessage}
       isStreaming={isStreaming}
     />
