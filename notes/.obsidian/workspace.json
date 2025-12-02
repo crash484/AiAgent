@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "09-HITL.md",
+                "file": "08-Shell-Tool.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "09-HITL"
+              "title": "08-Shell-Tool"
             }
           }
         ]
@@ -182,10 +182,10 @@
   },
   "active": "fea18391b613496b",
   "lastOpenFiles": [
-    "course.md",
-    "06-File-System-Tools.md",
     "07-Web-Search-Context-Management.md",
     "08-Shell-Tool.md",
-    "09-HITL.md"
+    "09-HITL.md",
+    "course.md",
+    "06-File-System-Tools.md"
   ]
 }
