@@ -671,9 +671,3 @@ npx tsx evals/shell-tools.eval.ts
 
 Results will be visible in your Laminar dashboard with scores per evaluator and aggregated metrics.
 
-## Exercises
-
-1. **Add more test cases** - Add 5 more golden prompts to each dataset covering edge cases
-2. **Create a new tool eval** - If you have additional tools, create an eval file for them
-3. **Experiment with models** - Change the model in the config and see how scores change
-4. **Add custom evaluators** - Write an evaluator that checks if tool arguments are reasonable
