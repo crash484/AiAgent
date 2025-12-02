@@ -1,144 +1,115 @@
-# Project Context
+# Project Overview
 
-## Purpose
-An educational course teaching developers how to build AI agents from scratch. Students build a customer support agent for a fictional SaaS product, learning the fundamentals without relying on frameworks. The course emphasizes understanding over abstraction—students should know exactly how their agent works.
-
-## The Agent
-A customer support agent for a SaaS product. Handles user lookups, subscription management, ticket creation, refunds, and knowledge base searches.
-
-**Core Tools:**
-- `lookupUser(email)` - Find a customer by email
-- `getSubscription(userId)` - Get subscription details
-- `listTickets(userId)` - View ticket history
-- `createTicket(userId, subject, description)` - Log a support issue
-- `updateSubscription(userId, plan)` - Change subscription (HITL required)
-- `issueRefund(userId, amount, reason)` - Process refund (HITL required)
-- `searchKnowledgeBase(query)` - Search help articles
-- `escalateToHuman(reason)` - Hand off to human support
+**Name:** AI Agents v2 - Build an AI Agent from Scratch
+**Description:** A two-day course teaching how to build a general-purpose, terminal-based AI agent from first principles using TypeScript and the OpenAI SDK. No frameworks, no magic—just a custom tool-calling loop with conversation history.
 
 ## Tech Stack
-- **Language:** TypeScript (strict mode)
-- **Runtime:** Cloudflare Workers
-- **Infrastructure:** Cloudflare Agents SDK + Durable Objects
-- **AI Provider:** Vercel AI SDK (`ai` + `@ai-sdk/openai`) for streaming and model switching
-- **Schema Validation:** Zod
-- **Frontend:** Custom dark-themed chat UI in `src/client/` (built from scratch, not covered in course)
-- **Communication:** WebSocket (via Agent `onConnect`, `onMessage`, `onClose` handlers)
-- **Client-Server Sync:** `useAgent` hook from `agents/react`
-- **Package Manager:** npm
-- **Local Dev:** `wrangler dev` (same code runs locally and in prod)
 
-## Infrastructure
+| Layer | Technology | Notes |
+|-------|------------|-------|
+| Runtime | Node.js | ES2022 modules |
+| Language | TypeScript | Strict mode |
+| LLM | Vercel AI SDK | `ai` + `@ai-sdk/openai` packages |
+| Terminal UI | Ink | React-based terminal components |
+| Browser Automation | Playwright | For browser handoff tool |
+| Linting/Formatting | Biome | Code style enforcement |
 
-### Cloudflare Agents SDK
-Use the base `Agent` class from `agents` package—NOT `AIChatAgent`. The `AIChatAgent` class abstracts too much, which defeats the educational goal.
+## Project Structure
 
-```typescript
-import { Agent, type Connection, type ConnectionContext } from "agents";
-import { streamText } from "ai";
-import { openai } from "@ai-sdk/openai";
-
-export class SupportAgent extends Agent<Env, AgentState> {
-  // Students build:
-  // - onConnect: sync state on connection
-  // - onMessage: handle chat messages, run agent loop
-  // - Agent loop: call streamText, handle tools, stream responses via connection.send()
-  // - State management: this.state, this.setState()
-}
-```
-
-### Why Cloudflare Agent Class?
-- **State persistence:** `this.state` / `this.setState()` automatically persists to Durable Objects
-- **WebSocket handling:** Built-in `onConnect`, `onMessage`, `onClose`
-- **SQL storage:** `this.sql` for structured data (users, tickets, etc.)
-- **Routing:** `routeAgentRequest` handles agent addressing and WebSocket upgrades
-- **React integration:** `useAgent` hook syncs state with frontend via WebSocket
-
-### What Students Build vs. What Cloudflare Provides
-| Students Build | Cloudflare Provides |
-|----------------|---------------------|
-| Tool definitions (Zod) | WebSocket connections |
-| Agent loop (while loop) | State persistence |
-| AI SDK streamText calls | Global routing |
-| Streaming via connection.send() | Identity/addressing |
-| HITL approval flow | SQL storage |
-
-### Local Development
-Run `wrangler dev` to start local server. Durable Objects work locally with full WebSocket support. No code changes between local and production.
-
-### Deployment
-Run `wrangler deploy` to push to Cloudflare's edge network. Students need a Cloudflare account (free tier + $5/mo for Durable Objects).
-
-## Project Conventions
-
-### Code Style
-- ESM modules (`import`/`export`)
-- `async`/`await` over raw promises
-- Descriptive variable names, avoid abbreviations
-- Keep functions small and focused
-- Prefer explicit types over inference for function signatures
-
-### Architecture Patterns
-- Base `Agent` class from Cloudflare SDK (not `AIChatAgent`)
-- Vercel AI SDK for LLM calls (`streamText`, `@ai-sdk/openai`)
-- Tool definitions separate from execution logic
-- Agent loop as a simple while loop, not abstracted
-- Conversation state via `this.state` (Durable Objects)
-- WebSocket communication with JSON message protocol
-- Configuration via environment variables (`.dev.vars` locally, secrets in prod)
-
-### File Structure
 ```
 src/
-  server/
-    index.ts        # Worker entry point, routes to agent
-    agent.ts        # Agent class extending Cloudflare Agent
-    tools/          # Tool definitions and implementations
-    db/             # Mock database seed data
-    prompts/        # System prompts and templates
-  client/           # Custom React chat UI (dark theme, not covered in course)
-    App.tsx         # Root component with useAgent hook
-    components/     # ChatContainer, MessageList, ChatMessage, ChatInput
-    styles.css      # Dark theme CSS variables + Tailwind
-    types.ts        # Client-side message types
-  evals/            # Evaluation test cases
-wrangler.toml       # Cloudflare configuration
+├── index.ts           # Main entry point (renders Ink app)
+├── type.ts            # Shared type definitions
+├── agent/
+│   ├── run.ts         # Agent runner with streamText loop
+│   ├── executeTool.ts # Tool execution dispatcher
+│   ├── system/        # System prompts
+│   └── tools/         # Individual tool implementations
+└── ui/
+    ├── App.tsx        # Main Ink application
+    ├── index.tsx      # UI exports
+    └── components/    # Reusable UI components
 ```
 
-### Testing Strategy
-- Minimal test setup—evals are the primary quality gate
-- Eval cases defined as input/expected-output pairs
-- Manual testing via chat UI during development
-- `wrangler dev` for local iteration
+## Conventions
 
-### Git Workflow
-- Lessons organized by branch: `lesson-01`, `lesson-02`, etc.
-- Each lesson branch contains the solution for the previous lesson
-- `lesson-N+1` = starting point for lesson N + solution for lesson N
-- Teacher stays on main branch during live coding
-- Students checkout lesson branches if they fall behind
+### Code Style
+- ES modules only (`"type": "module"`)
+- TypeScript strict mode
+- Biome for linting and formatting
+- Vercel AI SDK with manual agent loop (no auto-execution)
 
-## Domain Context
-- **Agent:** An autonomous system that uses an LLM to reason, plan, and take actions via tools
-- **Tool:** A function the agent can invoke to interact with external systems (DB, APIs)
-- **Agent Loop:** The cycle of prompt → LLM response → tool execution → repeat until done
-- **HITL:** Human-in-the-loop—requiring human approval for high-stakes actions
-- **Evals:** Test cases that verify agent behavior against expected outcomes
-- **Guardrails:** Input/output validation to prevent bad behavior
-- **Durable Object:** Cloudflare's persistent, globally-addressable compute primitive
+### File Naming
+- camelCase for TypeScript files: `executeTool.ts`
+- kebab-case for directories when needed
 
-## Important Constraints
-- Code must be educational and readable over optimized
-- No agent frameworks (LangChain, CrewAI)—build core logic from scratch
-- Use base `Agent` class, not `AIChatAgent`
-- Vercel AI SDK for LLM calls (streamText) but implement tool execution manually
-- Examples should be self-contained and runnable
-- Each lesson builds on the previous—no skipping ahead
-- HITL required for any action involving money or account changes
+### TypeScript
+- Target: ES2021
+- Module: ES2022
+- Strict type checking enabled
 
-## External Dependencies
-- `agents` - Cloudflare Agents SDK (base `Agent` class, `useAgent` hook)
-- `ai` - Vercel AI SDK core (streamText, CoreMessage types)
-- `@ai-sdk/openai` - OpenAI provider for Vercel AI SDK
-- `zod` - Schema validation and tool definitions
-- `lucide-react` - Icon library for UI components
+### Running the Agent
+- `npx tsx src/index.ts` - Run the agent locally
+- Interactive Ink-based terminal UI
+
+## Architecture
+
+### Agent Loop Pattern
+The core is a manual streamText loop with tool execution:
+
+```
+1. User sends message via Ink input
+2. Append to conversation history (CoreMessage[])
+3. Call streamText with history + tools
+4. Stream tokens to UI via fullStream iteration
+5. If finishReason === 'tool-calls':
+   a. Execute tools in parallel (Promise.all)
+   b. Append tool results to history
+   c. Go to step 3
+6. If finishReason !== 'tool-calls':
+   a. Display final response
+   b. Wait for next user input
+```
+
+### Conversation History
+- Array of AI SDK CoreMessage objects
+- Roles: `system`, `user`, `assistant`, `tool`
+- Tool results use structured output: `{ type: 'text', value: string }`
+
+### Tool Design
+- Tools defined using AI SDK `tool()` helper with Zod schemas
+- `inputSchema` defines parameters (validated by AI SDK)
+- Optional `execute` function for tool implementation
+- Tool dispatcher switches over tool name to call implementations
+
+## Course Schedule
+
+### Day 1
+- Intro, Demo, Hello World
+- Eval Baseline
+- Decision Engine
+- Tools and Actions
+- Tool-Calling Loop
+
+### Day 2
+- Context and Memory
+- Retrieval and Web Search
+- Tracing and Debugging
+- Advanced Evals and Metrics
+- Guardrails, HITL, and Composition
+
+## Key Concepts
+
+1. **Core Primitives**: Models, tools, state, memory, orchestration
+2. **Custom Tool Loop**: Conversation history-based, no framework abstraction
+3. **Tool Types**: Filesystem, web search, code execution, browser handoff
+4. **Context Management**: Retrieval for large contexts without token overflow
+5. **Evals**: Single-step and multi-step evaluation patterns
+6. **Guardrails**: Human-in-the-loop for risky tools (shell, bulk edits)
+7. **Composition**: Agents as tools, agent-to-agent orchestration
+
+## Environment
+
+- Node.js 18+
+- OpenAI API key (`OPENAI_API_KEY`)
+- Local terminal execution
