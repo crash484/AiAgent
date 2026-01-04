@@ -43,7 +43,7 @@ export function App() {
       setActiveToolCalls([]);
 
       try {
-        const newHistory = await runAgent(userInput, conversationHistory, {
+        await runAgent(userInput, conversationHistory, {
           onToken: (token) => {
             setStreamingText((prev) => prev + token);
           },
@@ -87,7 +87,7 @@ export function App() {
           },
         });
 
-        setConversationHistory(newHistory);
+        setConversationHistory((prev) => [...prev]);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
